@@ -1,26 +1,24 @@
+import React from "react";
 import { View, Text, Button } from "react-native";
-import { useDispatch } from "react-redux"; // [cite: 93]
-import { removeTodo } from "../store/todosSlice"; // [cite: 94]
+// CORRECTION : Le fichier est dans le même dossier, on utilise "./"
+import { useTodoStore } from "./useTodoStore"; 
 
 export default function TodoDetailsScreen({ route, navigation }) {
-  const { id, title } = route.params;
-  const dispatch = useDispatch(); // [cite: 98]
+  // Protection : Vérifie si route.params existe pour éviter un crash
+  const { id, title } = route.params || {}; 
+  const { removeTodo } = useTodoStore(); 
 
   const handleDelete = () => {
-    dispatch(removeTodo(id)); // [cite: 100]
-    navigation.goBack(); // [cite: 101]
+    if (id) {
+        removeTodo(id); 
+        navigation.goBack(); 
+    }
   };
 
   return (
-    <View style={{ flex: 1, padding: 20 }}>
-      <Text style={{ fontSize: 24 }}>{title}</Text>
-<Button 
-  title="Supprimer cette tâche" 
-  color="red" 
-  onPress={handleDelete} 
-/>    
-
-
-</View>
+    <View style={{ flex: 1, padding: 20, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ fontSize: 24, marginBottom: 20 }}>{title || "Tâche inconnue"}</Text>
+      <Button title="Supprimer cette tâche" color="red" onPress={handleDelete} />
+    </View>
   );
 }

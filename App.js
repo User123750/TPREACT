@@ -1,23 +1,50 @@
-import React, { useContext } from 'react';
-import { NavigationContainer } from "@react-navigation/native";
+import React, { useEffect, useState, useContext } from "react";
+import { View, StyleSheet, ActivityIndicator, SafeAreaView } from "react-native";
+import { initDB } from "./services/database";
+import { ThemeProvider, ThemeContext } from "./context/ThemeContext";
+import TodoListOfflineScreen from "./screens/TodoListOfflineScreen";
 
-// CORRECTION ICI : J'ai enlevé "/src" et utilisé le chemin "./context/..."
-// IMPORTANT : J'utilise les accolades { } car c'est le standard.
-import { AuthProvider, AuthContext } from './context/AuthContext';
-import AppDrawer from "./navigation/AppDrawer"; 
-import LoginScreen from "./screens/LoginScreen";
-
-function RootNavigator() {
-  const { user } = useContext(AuthContext);
-  return user ? <AppDrawer /> : <LoginScreen />;
+function MainApp() {
+  const { theme } = useContext(ThemeContext);
+  
+  return (
+    <SafeAreaView style={[styles.container, theme === "dark" ? styles.dark : styles.light]}>
+      <TodoListOfflineScreen />
+    </SafeAreaView>
+  );
 }
 
 export default function App() {
+  const [dbReady, setDbReady] = useState(false);
+
+  useEffect(() => {
+    const prepareDb = async () => {
+      try {
+        await initDB(); // Initialisation SQLite
+        setDbReady(true);
+      } catch (e) {
+        console.warn(e);
+      }
+    };
+    prepareDb();
+  }, []);
+
+  if (!dbReady) {
+    return <ActivityIndicator size="large" style={{flex:1}} />;
+  }
+
   return (
-    <AuthProvider>
-      <NavigationContainer>
-        <RootNavigator />
-      </NavigationContainer>
-    </AuthProvider>
+    <ThemeProvider>
+      <MainApp />
+    </ThemeProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingTop: 30,
+  },
+  light: { backgroundColor: "#ffffff" },
+  dark: { backgroundColor: "#121212" },
+});

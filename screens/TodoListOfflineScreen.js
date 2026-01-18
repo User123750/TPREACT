@@ -1,112 +1,99 @@
 import React, { useEffect, useState, useContext } from "react";
-import { View, Text, FlatList, Button, TextInput, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, FlatList, Button, TextInput, StyleSheet } from "react-native";
 import { loadTodos, addTodoOffline, updateTodoOffline, deleteTodoOffline } from "../services/database";
 import { ThemeContext } from "../context/ThemeContext";
 
 export default function TodoListOfflineScreen() {
-  const [todos, setTodos] = useState([]);
-  const [title, setTitle] = useState("");
-  const [editingId, setEditingId] = useState(null);
-  const { theme, toggleTheme } = useContext(ThemeContext);
+    const [todos, setTodos] = useState([]);
+    const [title, setTitle] = useState("");
+    const [editingId, setEditingId] = useState(null);
+    const { theme, toggleTheme } = useContext(ThemeContext);
 
-  // Fonction pour rafraîchir la liste depuis la DB
-  const refreshTodos = () => {
-    const data = loadTodos();
-    setTodos(data);
-  };
+    const refreshTodos = () => {
+        const data = loadTodos();
+        setTodos(data);
+    };
 
-  useEffect(() => {
-    refreshTodos();
-  }, []);
+    // Chargement initial
+    useEffect(() => {
+        refreshTodos();
+    }, []);
 
-  const handleAddOrUpdate = () => {
-    if (!title.trim()) return;
+    const handleAddOrUpdate = () => {
+        if (!title.trim()) return;
 
-    if (editingId) {
-      updateTodoOffline(editingId, title);
-      setEditingId(null);
-    } else {
-      addTodoOffline(title);
-    }
-    setTitle("");
-    refreshTodos();
-  };
+        if (editingId) {
+            updateTodoOffline(editingId, title);
+            setEditingId(null);
+        } else {
+            addTodoOffline(title);
+        }
+        setTitle("");
+        refreshTodos();
+    };
 
-  // EXERCICE SUPPLÉMENTAIRE : Suppression
-  const handleDelete = (id) => {
-    deleteTodoOffline(id);
-    refreshTodos();
-  };
+    // Pour l'exercice supplémentaire
+    const handleDelete = (id) => {
+        deleteTodoOffline(id);
+        refreshTodos();
+    };
 
-  // Styles dynamiques selon le thème
-  const containerStyle = theme === "light" ? styles.lightContainer : styles.darkContainer;
-  const textStyle = theme === "light" ? styles.lightText : styles.darkText;
+    const handleEdit = (item) => {
+        setTitle(item.title);
+        setEditingId(item.id);
+    };
 
-  return (
-    <View style={[styles.container, containerStyle]}>
-      <Button 
-        title={`Mode: ${theme === "light" ? "Dark" : "Light"}`} 
-        onPress={toggleTheme} 
-      />
+    // Styles dynamiques selon le thème
+    const textColor = theme === "dark" ? "#fff" : "#000";
+    const containerStyle = theme === "dark" ? styles.darkContainer : styles.lightContainer;
 
-      {/* Formulaire */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          placeholder="Nouvelle tâche..."
-          placeholderTextColor={theme === "dark" ? "#ccc" : "#888"}
-          value={title}
-          onChangeText={setTitle}
-          style={[styles.input, textStyle, { borderColor: textStyle.color }]}
-        />
-        <Button 
-          title={editingId ? "Mettre à jour" : "Ajouter"} 
-          onPress={handleAddOrUpdate} 
-        />
-      </View>
-
-      {/* Liste */}
-      <FlatList
-        data={todos}
-        keyExtractor={(item) => item.id.toString()}
-        ListEmptyComponent={<Text style={[textStyle, {textAlign:'center'}]}>Aucune tâche hors ligne</Text>}
-        renderItem={({ item }) => (
-          <View style={styles.itemContainer}>
-            <Text style={[styles.itemText, textStyle]}>{item.title}</Text>
+    return (
+        <View style={[styles.container, containerStyle]}>
+            <Button title={`Mode: ${theme}`} onPress={toggleTheme} />
             
-            <View style={styles.actions}>
-              <Button 
-                title="Modifier" 
-                color="orange"
-                onPress={() => {
-                  setTitle(item.title);
-                  setEditingId(item.id);
-                }} 
-              />
-              <View style={{width: 10}} />
-              <Button 
-                title="X" 
-                color="red"
-                onPress={() => handleDelete(item.id)} 
-              />
+            <View style={styles.inputContainer}>
+                <TextInput
+                    placeholder="Tâche offline"
+                    placeholderTextColor={theme === "dark" ? "#ccc" : "#666"}
+                    value={title}
+                    onChangeText={setTitle}
+                    style={[styles.input, { color: textColor, borderColor: textColor }]}
+                />
+                <Button 
+                    title={editingId ? "Mettre à jour" : "Ajouter"} 
+                    onPress={handleAddOrUpdate} 
+                />
             </View>
-          </View>
-        )}
-      />
-    </View>
-  );
+
+            {todos.length === 0 && (
+                <Text style={{ color: textColor, textAlign: "center", marginTop: 20 }}>
+                    Aucune tâche hors ligne
+                </Text>
+            )}
+
+            <FlatList
+                data={todos}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={({ item }) => (
+                    <View style={styles.itemContainer}>
+                        <Text style={{ color: textColor, flex: 1 }}>{item.title}</Text>
+                        <View style={styles.buttons}>
+                            <Button title="Modif" onPress={() => handleEdit(item)} />
+                            <Button title="Suppr" color="red" onPress={() => handleDelete(item.id)} />
+                        </View>
+                    </View>
+                )}
+            />
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
-  inputContainer: { marginBottom: 20, marginTop: 10 },
-  input: { borderWidth: 1, padding: 10, marginBottom: 10, borderRadius: 5 },
-  itemContainer: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 15, padding: 10, borderWidth: 1, borderColor: '#ccc', borderRadius: 5 },
-  itemText: { flex: 1, marginRight: 10 },
-  actions: { flexDirection: 'row' },
-  
-  // Thèmes
-  lightContainer: { backgroundColor: "#ffffff" },
-  darkContainer: { backgroundColor: "#121212" },
-  lightText: { color: "#000000" },
-  darkText: { color: "#ffffff" },
+    container: { flex: 1, padding: 20 },
+    lightContainer: { backgroundColor: "#ffffff" },
+    darkContainer: { backgroundColor: "#121212" },
+    inputContainer: { marginBottom: 20 },
+    input: { borderWidth: 1, padding: 10, marginBottom: 10, borderRadius: 5 },
+    itemContainer: { flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#ccc" },
+    buttons: { flexDirection: "row", gap: 10 }
 });
